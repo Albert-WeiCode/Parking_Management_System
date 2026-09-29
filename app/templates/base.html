@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% block title %}{{ app_name }}{% endblock %}</title>
+    <link rel="stylesheet" href="/static/css/app.css">
+</head>
+<body>
+<div class="app-shell">
+    <aside class="sidebar" id="sidebar">
+        <a class="brand" href="/dashboard">
+            <span class="brand-mark">P</span>
+            <span><strong>停车场管理</strong><small>Parking Console</small></span>
+        </a>
+        <nav class="nav-list" aria-label="主导航">
+            <a class="nav-item {{ 'active' if active == 'dashboard' }}" href="/dashboard"><span>数据概览</span><small>Dashboard</small></a>
+            <a class="nav-item {{ 'active' if active == 'detect-image' }}" href="/detect/image"><span>图片检测</span><small>YOLO11s + LPRNet</small></a>
+            <a class="nav-item {{ 'active' if active == 'detect-camera' }}" href="/detect/camera"><span>摄像头检测</span><small>OpenCV Pipeline</small></a>
+            <a class="nav-item {{ 'active' if active == 'records' }}" href="/records"><span>停车记录</span><small>MySQL Records</small></a>
+            <a class="nav-item {{ 'active' if active == 'chat' }}" href="/chat"><span>智能问答</span><small>DeepSeek Local</small></a>
+        </nav>
+        <div class="sidebar-footer">
+            <div class="user-block"><span class="avatar">{{ username[0]|upper }}</span><span><strong>{{ username }}</strong><small>系统管理员</small></span></div>
+            <form method="post" action="/logout"><button class="text-button" type="submit">退出登录</button></form>
+        </div>
+    </aside>
+    <main class="main-content">
+        <header class="topbar">
+            <button class="menu-button" id="menuButton" type="button" aria-label="打开导航">☰</button>
+            <div>{% block heading %}{% endblock %}</div>
+            <span class="system-status"><i></i>系统运行中</span>
+        </header>
+        <div class="page-content">{% block content %}{% endblock %}</div>
+    </main>
+</div>
+<script src="/static/js/app.js"></script>
+{% block scripts %}{% endblock %}
+</body>
+</html>

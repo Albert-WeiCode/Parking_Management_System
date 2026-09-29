@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block title %}图片检测 - {{ app_name }}{% endblock %}
+{% block heading %}<p class="eyebrow">AI Detection</p><h1>图片检测</h1>{% endblock %}
+{% block content %}
+<section class="workspace-grid">
+    <div class="panel detect-workspace">
+        <div class="panel-heading"><div><p class="eyebrow">YOLO11s + LPRNet</p><h2>上传车辆图片</h2></div><span class="model-chip">本地模型</span></div>
+        <label class="upload-zone" id="dropZone" for="imageInput">
+            <input id="imageInput" type="file" accept="image/*" hidden>
+            <span class="upload-symbol">＋</span><strong>选择或拖入图片</strong><small>支持 JPG、PNG、WEBP</small>
+        </label>
+        <div class="image-stage hidden" id="imageStage"><img id="preview" alt="待检测图片"></div>
+        <div class="action-row"><button class="button primary" id="detectButton" type="button" disabled>开始检测</button><button class="button secondary hidden" id="resetButton" type="button">重新选择</button></div>
+        <div class="progress hidden" id="loading"><span></span>正在执行车牌定位与字符识别</div>
+    </div>
+    <aside class="panel result-panel">
+        <div class="panel-heading"><div><p class="eyebrow">Result</p><h2>检测结果</h2></div></div>
+        <div id="result"><div class="empty-state tall">检测结果将在这里显示</div></div>
+    </aside>
+</section>
+{% endblock %}
+{% block scripts %}<script src="/static/js/detect.js"></script>{% endblock %}

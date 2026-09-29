@@ -1,0 +1,37 @@
+{% extends "base.html" %}
+{% block title %}数据概览 - {{ app_name }}{% endblock %}
+{% block heading %}<p class="eyebrow">Dashboard</p><h1>数据概览</h1>{% endblock %}
+{% block content %}
+<section class="metric-grid" aria-label="记录概览">
+    <article class="metric-card"><span>全部记录</span><strong>{{ total }}</strong><small>当前已存储记录</small></article>
+    <article class="metric-card accent"><span>今日新增</span><strong>{{ today_total }}</strong><small>按记录时间统计</small></article>
+    <article class="metric-card"><span>不同车牌</span><strong>{{ unique_plates }}</strong><small>去重后的车牌数量</small></article>
+    <article class="metric-card"><span>覆盖省份</span><strong>{{ province_stats|length }}</strong><small>按车牌首字统计</small></article>
+</section>
+<section class="dashboard-grid">
+    <div class="panel chart-panel">
+        <div class="panel-heading"><div><p class="eyebrow">近 7 日</p><h2>停车记录统计</h2></div></div>
+        <canvas id="trendChart" height="250" aria-label="近七日停车记录柱状图"></canvas>
+    </div>
+    <div class="panel">
+        <div class="panel-heading"><div><p class="eyebrow">Province</p><h2>省份车牌统计</h2></div></div>
+        {% if province_stats %}
+        <div class="province-list">
+            {% set max_count = province_stats[0].count %}
+            {% for item in province_stats[:8] %}
+            <div class="province-row"><span class="province-code">{{ item.code }}</span><span class="province-name">{{ item.name }}</span><span class="bar-track"><i style="width: {{ (item.count / max_count * 100)|round }}%"></i></span><strong>{{ item.count }}</strong></div>
+            {% endfor %}
+        </div>
+        {% else %}<div class="empty-state">暂无省份统计数据</div>{% endif %}
+    </div>
+</section>
+<section class="panel">
+    <div class="panel-heading"><div><p class="eyebrow">Recent records</p><h2>最近停车记录</h2></div><a class="button secondary small" href="/records">查看全部</a></div>
+    {% if latest %}
+    <div class="table-wrap"><table><thead><tr><th>车牌号码</th><th>省份</th><th>来源</th><th>记录时间</th></tr></thead><tbody>
+    {% for item in latest %}<tr><td><span class="plate-badge">{{ item.plate_number }}</span></td><td>{{ item.province }}</td><td>{{ item.source }}</td><td>{{ item.recorded_at.strftime('%Y-%m-%d %H:%M') }}</td></tr>{% endfor %}
+    </tbody></table></div>
+    {% else %}<div class="empty-state">暂无停车记录，可在停车记录页手工新增。</div>{% endif %}
+</section>
+{% endblock %}
+{% block scripts %}<script>drawBarChart("trendChart", {{ trend|tojson }});</script>{% endblock %}

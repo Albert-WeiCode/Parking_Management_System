@@ -1,0 +1,13 @@
+{% extends "base.html" %}
+{% block title %}智能问答 - {{ app_name }}{% endblock %}
+{% block heading %}<p class="eyebrow">Local AI</p><h1>智能问答</h1>{% endblock %}
+{% block content %}
+<section class="chat-shell panel">
+    <div class="panel-heading chat-header"><div><p class="eyebrow">Ollama</p><h2>停车管理助手</h2></div><span class="model-chip">{{ ollama_model }}</span></div>
+    <div class="chat-messages" id="chatMessages">
+        <div class="message assistant"><span class="message-label">AI 助手</span><p>你好，请输入需要查询或了解的问题。</p></div>
+    </div>
+    <form class="chat-composer" id="chatForm"><textarea id="chatInput" rows="2" maxlength="2000" placeholder="输入问题" required></textarea><button class="button primary" type="submit">发送</button></form>
+</section>
+{% endblock %}
+{% block scripts %}<script src="/static/js/chat.js"></script>{% endblock %}
