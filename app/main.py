@@ -16,7 +16,7 @@ from app.api.chat import router as chat_router
 from app.api.detect import RESULT_DIR, router as detect_router
 from app.api.records import router as records_router
 from app.auth import current_username, is_authenticated
-from app.config import APP_NAME, OLLAMA_MODEL, ROOT, SECRET_KEY
+from app.config import APP_NAME, ROOT, SECRET_KEY
 from app.database import get_db, init_database
 from app.models import ParkingRecord
 from app.parking import duration, filtered_records, now, parking_stats, status_label
@@ -128,4 +128,4 @@ def records_page(request: Request, q: str = Query("", max_length=32), status: st
 def chat_page(request: Request):
     if redirect := require_page_login(request):
         return redirect
-    return templates.TemplateResponse(request=request, name="chat.html", context=page_context(request, "chat", ollama_model=OLLAMA_MODEL))
+    return templates.TemplateResponse(request=request, name="chat.html", context=page_context(request, "chat"))
