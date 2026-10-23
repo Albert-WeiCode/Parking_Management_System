@@ -29,3 +29,17 @@ ADMIN_PASSWORD = os.getenv("ADMIN_PASSWORD", "admin123")
 
 OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "http://127.0.0.1:11434")
 OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "deepseek-r1:1.5b")
+
+
+def project_path(value: str) -> Path:
+    path = Path(value).expanduser()
+    return path if path.is_absolute() else ROOT / path
+
+
+DETECTION_MODEL_PATH = project_path(os.getenv("DETECTION_MODEL_PATH", "runs/license_plate/weights/best.pt"))
+RECOGNITION_MODEL_PATH = project_path(os.getenv("RECOGNITION_MODEL_PATH", "recognize/plate_rec_color.pth"))
+INFERENCE_DEVICE = os.getenv("INFERENCE_DEVICE", "auto")
+DETECTION_CONFIDENCE = float(os.getenv("DETECTION_CONFIDENCE", "0.25"))
+DETECTION_IMAGE_SIZE = int(os.getenv("DETECTION_IMAGE_SIZE", "1024"))
+MAX_UPLOAD_BYTES = int(os.getenv("MAX_UPLOAD_MB", "10")) * 1024 * 1024
+MAX_IMAGE_PIXELS = 20_000_000

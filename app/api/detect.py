@@ -1,3 +1,5 @@
+import logging
+from io import BytesIO
 from pathlib import Path
 from uuid import uuid4
 
@@ -5,21 +7,16 @@ import cv2
 import numpy as np
 from fastapi import APIRouter, File, Request, UploadFile
 from fastapi.responses import JSONResponse
-from PIL import Image, ImageDraw, ImageFont
+from PIL import Image, ImageDraw, ImageFont, ImageOps, UnidentifiedImageError
+from starlette.concurrency import run_in_threadpool
 
-from ai.plate_recognition import recognize_plate
+from recognize.service import ModelUnavailableError, recognize_plate
 from app.auth import is_authenticated
-from app.config import RUNTIME_DIR
+from app.config import MAX_IMAGE_PIXELS, MAX_UPLOAD_BYTES, RUNTIME_DIR
 
-
+logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/detect", tags=["检测"])
-
-ROOT = Path(__file__).resolve().parent.parent.parent
-
-TEMP_DIR = RUNTIME_DIR / "uploads"
 RESULT_DIR = RUNTIME_DIR / "results"
-
-TEMP_DIR.mkdir(parents=True, exist_ok=True)
 RESULT_DIR.mkdir(parents=True, exist_ok=True)
 
 
@@ -28,6 +25,8 @@ def draw_plate_labels(image, labels):
         "/System/Library/Fonts/PingFang.ttc",
         "/System/Library/Fonts/STHeiti Medium.ttc",
         "/System/Library/Fonts/Supplemental/Arial Unicode.ttf",
+        "/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc",
+        "C:/Windows/Fonts/msyh.ttc",
     )
     font_path = next((path for path in font_paths if Path(path).exists()), None)
     if not font_path:
@@ -43,94 +42,54 @@ def draw_plate_labels(image, labels):
     return cv2.cvtColor(np.asarray(canvas), cv2.COLOR_RGB2BGR)
 
 
+def process_image(content):
+    try:
+        with Image.open(BytesIO(content)) as uploaded:
+            if uploaded.width * uploaded.height > MAX_IMAGE_PIXELS:
+                raise ValueError("图片分辨率过大，请缩小至 2000 万像素以内")
+            if uploaded.format not in {"JPEG", "PNG", "WEBP", "BMP"}:
+                raise ValueError("不支持该图片格式，请上传常见格式的图片")
+            # Respect mobile-camera EXIF orientation before locating plates.
+            image = cv2.cvtColor(np.asarray(ImageOps.exif_transpose(uploaded).convert("RGB")), cv2.COLOR_RGB2BGR)
+    except (UnidentifiedImageError, OSError, Image.DecompressionBombError) as exc:
+        raise ValueError("无法读取图片，请上传有效的图片文件") from exc
+
+    results = recognize_plate(image)
+    labels = []
+    for item in results:
+        x1, y1, x2, y2 = item["box"]
+        cv2.rectangle(image, (x1, y1), (x2, y2), (0, 255, 0), 3)
+        labels.append((f'{item["plate_number"] or "识别失败"} {item.get("plate_color", "")}', x1, y1))
+    image = draw_plate_labels(image, labels)
+    result_filename = f"result_{uuid4().hex}.jpg"
+    success, encoded = cv2.imencode(".jpg", image)
+    if not success:
+        raise RuntimeError("结果图片编码失败")
+    (RESULT_DIR / result_filename).write_bytes(encoded.tobytes())
+    return {"success": True, "result_image": f"/results/{result_filename}", "results": results}
+
+
 @router.post("/image")
 async def detect_image(request: Request, file: UploadFile = File(...)):
-
-    if not is_authenticated(request):
-        return JSONResponse(status_code=401, content={"success": False, "message": "请先登录"})
-
-    # 检查文件类型
-    if not file.content_type or not file.content_type.startswith("image/"):
-        return JSONResponse(
-            status_code=400,
-            content={
-                "success": False,
-                "message": "请上传图片文件",
-            },
-        )
-
-    # 保存临时图片
-    suffix = Path(file.filename or "image.jpg").suffix.lower()
-    if suffix not in {".jpg", ".jpeg", ".png", ".webp", ".bmp"}:
-        suffix = ".jpg"
-    token = uuid4().hex
-    file_path = TEMP_DIR / f"{token}{suffix}"
-
-    content = await file.read()
-
-    with open(file_path, "wb") as f:
-        f.write(content)
-
     try:
-        # YOLO11 + LPRNet
-        results = recognize_plate(str(file_path))
-
-        # 读取原图
-        image = cv2.imread(str(file_path))
-
-        if image is None:
-            raise ValueError("无法读取图片")
-
-        # 在原图上绘制检测框
-        labels = []
-        for item in results:
-
-            x1, y1, x2, y2 = item["box"]
-
-            plate_number = item["plate_number"]
-
-            # 绘制车牌框
-            cv2.rectangle(
-                image,
-                (x1, y1),
-                (x2, y2),
-                (0, 255, 0),
-                3,
-            )
-
-            labels.append((plate_number or "识别失败", x1, y1))
-
-        image = draw_plate_labels(image, labels)
-
-        # 保存结果图片
-        result_filename = f"result_{token}.jpg"
-
-        result_path = RESULT_DIR / result_filename
-
-        cv2.imwrite(
-            str(result_path),
-            image,
-        )
-
-        return {
-            "success": True,
-            "filename": file.filename,
-            "result_image": f"/results/{result_filename}",
-            "results": results,
-        }
-
-    except Exception as e:
-
-        return JSONResponse(
-            status_code=500,
-            content={
-                "success": False,
-                "message": str(e),
-            },
-        )
-
+        if not is_authenticated(request):
+            return JSONResponse(status_code=401, content={"success": False, "message": "请先登录"})
+        if not file.content_type or not file.content_type.startswith("image/"):
+            return JSONResponse(status_code=400, content={"success": False, "message": "请上传图片文件"})
+        content = await file.read(MAX_UPLOAD_BYTES + 1)
+        if len(content) > MAX_UPLOAD_BYTES:
+            return JSONResponse(status_code=413, content={"success": False, "message": f"图片大小不能超过 {MAX_UPLOAD_BYTES // 1024 // 1024} 兆"})
+        if not content:
+            return JSONResponse(status_code=400, content={"success": False, "message": "图片内容为空"})
+        result = await run_in_threadpool(process_image, content)
+        return {**result, "filename": file.filename}
+    except ValueError as exc:
+        return JSONResponse(status_code=400, content={"success": False, "message": str(exc)})
+    except ModelUnavailableError as exc:
+        logger.exception("Plate model unavailable")
+        return JSONResponse(status_code=503, content={"success": False, "message": str(exc)})
+    except Exception:
+        logger.exception("Plate inference failed")
+        return JSONResponse(status_code=500, content={"success": False, "message": "识别服务异常，请检查服务日志后重试"})
     finally:
-
-        # 删除临时图片
-        if file_path.exists():
-            file_path.unlink()
+        await file.close()

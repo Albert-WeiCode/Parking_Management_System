@@ -1,30 +1,9 @@
-{% extends "base.html" %}
-{% block title %}停车记录 - {{ app_name }}{% endblock %}
-{% block heading %}<p class="eyebrow">Records</p><h1>停车记录</h1>{% endblock %}
+{% extends "base.html" %}{% block title %}{{ '在场车辆' if active_view else '停车记录' }} - {{ app_name }}{% endblock %}{% block heading %}<h1>{{ '在场车辆' if active_view else '停车记录' }}</h1>{% endblock %}
 {% block content %}
-{% if error %}<div class="alert error">{{ error }}</div>{% endif %}
-{% if success %}<div class="alert success">{{ success }}</div>{% endif %}
-<section class="records-layout">
-    <div class="panel record-form-panel">
-        <div class="panel-heading"><div><p class="eyebrow">New record</p><h2>新增记录</h2></div></div>
-        <form method="post" action="/api/records" class="stack-form">
-            <label>车牌号码<input name="plate_number" placeholder="例如：粤B12345" maxlength="16" required></label>
-            <label>记录时间<input name="recorded_at" type="datetime-local"></label>
-            <label>备注<textarea name="note" rows="3" maxlength="500" placeholder="可选"></textarea></label>
-            <button class="button primary full" type="submit">保存记录</button>
-        </form>
-    </div>
-    <div class="panel records-panel">
-        <div class="panel-heading"><div><p class="eyebrow">Stored data</p><h2>记录查询</h2></div><span class="count-label">显示 {{ records|length }} 条</span></div>
-        <form method="get" action="/records" class="filter-row">
-            <input name="q" value="{{ q }}" placeholder="搜索车牌号码">
-            <select name="province"><option value="">全部省份</option>{% for code, name in province_names.items() %}<option value="{{ code }}" {{ 'selected' if province == code }}>{{ code }} · {{ name }}</option>{% endfor %}</select>
-            <button class="button secondary" type="submit">查询</button>
-            {% if q or province %}<a class="button ghost" href="/records">清除</a>{% endif %}
-        </form>
-        {% if records %}<div class="table-wrap"><table><thead><tr><th>车牌号码</th><th>省份</th><th>来源</th><th>记录时间</th><th>备注</th></tr></thead><tbody>
-        {% for item in records %}<tr><td><span class="plate-badge">{{ item.plate_number }}</span></td><td>{{ province_names.get(item.province, item.province) }}</td><td>{{ item.source }}</td><td>{{ item.recorded_at.strftime('%Y-%m-%d %H:%M') }}</td><td class="note-cell">{{ item.note or '-' }}</td></tr>{% endfor %}
-        </tbody></table></div>{% else %}<div class="empty-state">没有符合条件的记录</div>{% endif %}
-    </div>
-</section>
+{% if error %}<div class="alert error" role="alert">{{ error }}</div>{% endif %}{% if success %}<div class="alert success" role="status">{{ success }}</div>{% endif %}
+<div class="summary-strip"><span>总车位 <strong>{{ stats.capacity }}</strong></span><span>在场 <strong>{{ stats.occupied }}</strong> 辆</span><span>剩余 <strong>{{ stats.remaining }}</strong> 个</span><span class="badge {{ 'warning' if stats.remaining == 0 else 'success' }}">{{ '已满位' if stats.remaining == 0 else '可入场' }}</span><details class="capacity-settings"><summary>设置车位总数</summary><form method="post" action="/api/records/capacity"><label>总车位<input type="number" name="capacity" min="{{ [stats.occupied, 1]|max }}" max="100000" value="{{ stats.capacity }}" required></label><button class="button primary small">保存设置</button></form></details></div>
+<section class="records-layout"><aside class="panel record-form-panel"><div class="panel-heading"><div><h2>手工出入场</h2></div></div><form method="post" action="/api/records/entry" class="stack-form"><label>车牌号码<input name="plate_number" placeholder="例如：粤B12345" maxlength="8" required></label><label>备注<textarea name="note" maxlength="500" rows="2" placeholder="选填，如临时访客"></textarea></label><button class="button primary full" {{ 'disabled' if stats.remaining == 0 }}>确认入场 ↘</button></form><div class="form-divider">车辆离场</div><form method="post" action="/api/records/exit" class="stack-form"><label>车牌号码<input name="plate_number" placeholder="输入在场车辆车牌" maxlength="8" required></label><button class="button secondary full">确认出场 ↗</button></form></aside>
+<div class="panel records-panel"><div class="panel-heading"><div><h2>{{ '当前在场车辆' if active_view else '全部停车记录' }} <span class="inline-count">{{ total }}</span></h2></div><a class="button secondary small" href="{{ export_url }}">↓ 导出记录</a></div>
+<form method="get" class="filter-row"><label>车牌号码<input name="q" value="{{ q }}" placeholder="输入车牌搜索"></label>{% if not active_view %}<label>车辆状态<select name="status">{% for value, label in [('', '全部状态'), ('active', '在场'), ('exited', '已出场'), ('history', '历史记录')] %}<option value="{{ value }}" {{ 'selected' if status == value }}>{{ label }}</option>{% endfor %}</select></label>{% endif %}<label>入场日期（从）<input name="start" type="date" value="{{ start }}"></label><label>至<input name="end" type="date" value="{{ end }}"></label><button class="button primary">查询</button><a class="button ghost" href="{{ '/parking' if active_view else '/records' }}">重置</a></form>
+{% include '_records_table.html' %}<div class="pagination"><span>共 {{ total }} 条 · 第 {{ page }} / {{ pages }} 页</span><div>{% if page > 1 %}<a class="button secondary small" href="{{ previous_url }}">上一页</a>{% endif %}{% if page < pages %}<a class="button secondary small" href="{{ next_url }}">下一页</a>{% endif %}</div></div></div></section>
 {% endblock %}

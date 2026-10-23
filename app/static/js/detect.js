@@ -7,11 +7,14 @@ const resetButton = document.getElementById("resetButton");
 const loading = document.getElementById("loading");
 const result = document.getElementById("result");
 let selectedFile = null;
+let previewUrl = null;
 
 function chooseFile(file) {
-    if (!file || !file.type.startsWith("image/")) return;
+    if (imageInput.disabled || !file || !file.type.startsWith("image/")) return;
     selectedFile = file;
-    preview.src = URL.createObjectURL(file);
+    if (previewUrl) URL.revokeObjectURL(previewUrl);
+    previewUrl = URL.createObjectURL(file);
+    preview.src = previewUrl;
     imageStage.classList.remove("hidden");
     dropZone.classList.add("hidden");
     resetButton.classList.remove("hidden");
@@ -32,6 +35,8 @@ dropZone.addEventListener("drop", (event) => chooseFile(event.dataTransfer.files
 
 resetButton.addEventListener("click", () => {
     selectedFile = null;
+    if (previewUrl) URL.revokeObjectURL(previewUrl);
+    previewUrl = null;
     imageInput.value = "";
     preview.removeAttribute("src");
     imageStage.classList.add("hidden");
@@ -47,15 +52,19 @@ detectButton.addEventListener("click", async () => {
     formData.append("file", selectedFile);
     detectButton.disabled = true;
     loading.classList.remove("hidden");
+    resetButton.disabled = true;
+    imageInput.disabled = true;
     try {
         const response = await fetch("/api/detect/image", { method: "POST", body: formData });
         const data = await response.json();
         if (!response.ok || !data.success) throw new Error(data.message || "检测失败");
         renderDetectionResult(result, data);
     } catch (error) {
-        result.innerHTML = `<div class="alert error">${escapeHtml(error.message)}</div>`;
+        result.innerHTML = `<div class="alert error">${escapeHtml(userErrorMessage(error, "识别失败，请检查网络后重试"))}</div>`;
     } finally {
         detectButton.disabled = false;
         loading.classList.add("hidden");
+        resetButton.disabled = false;
+        imageInput.disabled = false;
     }
 });

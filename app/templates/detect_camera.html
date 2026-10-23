@@ -1,18 +1,19 @@
 {% extends "base.html" %}
-{% block title %}摄像头检测 - {{ app_name }}{% endblock %}
-{% block heading %}<p class="eyebrow">Camera Detection</p><h1>摄像头检测</h1>{% endblock %}
+{% block title %}摄像头识别 - {{ app_name }}{% endblock %}
+{% block heading %}<h1>摄像头识别</h1>{% endblock %}
 {% block content %}
 <section class="workspace-grid">
     <div class="panel detect-workspace">
-        <div class="panel-heading"><div><p class="eyebrow">OpenCV Pipeline</p><h2>实时画面</h2></div><span class="model-chip" id="cameraStatus">摄像头未启动</span></div>
+        <div class="panel-heading"><div><h2>实时画面</h2></div><span class="model-chip" id="cameraStatus">摄像头未启动</span></div>
         <div class="camera-stage"><video id="cameraVideo" autoplay playsinline muted></video><div class="camera-placeholder" id="cameraPlaceholder">允许浏览器访问摄像头后显示画面</div><canvas id="captureCanvas" hidden></canvas></div>
         <div class="action-row"><button class="button primary" id="startCamera" type="button">启动摄像头</button><button class="button secondary" id="captureFrame" type="button" disabled>截帧检测</button><button class="button ghost hidden" id="stopCamera" type="button">停止</button></div>
+        <label><input type="checkbox" id="autoDetect"> 连续检测</label>
         <div class="progress hidden" id="cameraLoading"><span></span>正在分析当前画面</div>
     </div>
     <aside class="panel result-panel">
-        <div class="panel-heading"><div><p class="eyebrow">Result</p><h2>识别结果</h2></div></div>
+        <div class="panel-heading"><div><h2>识别结果</h2></div></div>
         <div id="cameraResult"><div class="empty-state tall">截取画面后显示检测结果</div></div>
     </aside>
 </section>
 {% endblock %}
-{% block scripts %}<script src="/static/js/camera.js"></script>{% endblock %}
+{% block scripts %}<script src="/static/js/camera.js?v=20261023-cn"></script>{% endblock %}

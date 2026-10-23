@@ -1,5 +1,6 @@
 from pathlib import Path
 
+import torch
 from ultralytics import YOLO
 
 
@@ -21,7 +22,7 @@ DATA_YAML = ROOT / "dataset" / "data.yaml"
 # 模型
 # =========================
 
-MODEL_PATH = "yolo11s.pt"
+MODEL_PATH = ROOT / "yolo11s.pt"
 
 
 # =========================
@@ -58,8 +59,7 @@ def main():
         batch=BATCH_SIZE,
 
         # GPU
-        device=0,
-        #device="mps",
+        device="cuda:0" if torch.cuda.is_available() else ("mps" if torch.backends.mps.is_available() else "cpu"),
 
         # 输出目录
         project=ROOT / "runs",
@@ -73,7 +73,7 @@ def main():
         degrees=5.0,
         translate=0.1,
         scale=0.5,
-        fliplr=0.5,
+        fliplr=0.0,  # 车牌字符不能水平镜像
 
         # 训练稳定性
         patience=20,

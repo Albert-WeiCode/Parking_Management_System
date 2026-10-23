@@ -49,7 +49,7 @@ function drawBarChart(id, data) {
             const barHeight = value / max * chartHeight;
             const x = padding.left + step * index + (step - barWidth) / 2;
             const y = padding.top + chartHeight - barHeight;
-            ctx.fillStyle = index === data.length - 1 ? "#c47721" : "#1e7050";
+            ctx.fillStyle = index === data.length - 1 ? "#10b9a5" : "#3978f6";
             ctx.fillRect(x, y, barWidth, barHeight);
             ctx.fillStyle = "#69736f";
             ctx.textAlign = "center";
@@ -63,7 +63,11 @@ function drawBarChart(id, data) {
 function escapeHtml(value) {
     const node = document.createElement("div");
     node.textContent = value ?? "";
-    return node.innerHTML;
+    return node.innerHTML.replace(/"/g, "&quot;");
+}
+
+function userErrorMessage(error, fallback = "操作失败，请重试") {
+    return /[\u4e00-\u9fff]/.test(error.message || "") ? error.message : fallback;
 }
 
 function renderDetectionResult(container, data) {
@@ -76,9 +80,46 @@ function renderDetectionResult(container, data) {
         const ocrConfidence = Number(item.ocr_confidence || 0) * 100;
         return `<article class="result-item">
             <header><span>车牌 ${index + 1}</span><strong>${escapeHtml(item.plate_number || "识别失败")}</strong></header>
-            <dl><div><dt>检测置信度</dt><dd>${detectConfidence.toFixed(1)}%</dd></div><div><dt>字符置信度</dt><dd>${ocrConfidence.toFixed(1)}%</dd></div></dl>
+            <dl><div><dt>车牌颜色</dt><dd>${escapeHtml(item.plate_color || "未知")} (${(Number(item.color_confidence || 0) * 100).toFixed(1)}%)</dd></div><div><dt>检测置信度</dt><dd>${detectConfidence.toFixed(1)}%</dd></div><div><dt>字符置信度</dt><dd>${ocrConfidence.toFixed(1)}%</dd></div></dl>
+            <form class="access-form">
+                <label>核对车牌号码<input name="plate_number" value="${escapeHtml(item.plate_number || "")}" maxlength="8" required></label>
+                <div class="action-row"><button class="button primary small" data-operation="entry" type="submit">确认入场 ↘</button><button class="button secondary small" data-operation="exit" type="submit">确认出场 ↗</button></div>
+                <p class="access-message" role="status"></p>
+            </form>
         </article>`;
     }).join("");
     const image = data.result_image ? `<img class="result-image" src="${encodeURI(data.result_image)}" alt="检测结果">` : "";
     container.innerHTML = `${image}<div class="result-list">${items}</div>`;
 }
+
+
+// Shared by image and camera recognition results. Registration requires a click.
+document.addEventListener("focusin", (event) => {
+    if (event.target.closest(".access-form")) {
+        const automatic = document.getElementById("autoDetect");
+        if (automatic) { automatic.checked = false; automatic.dispatchEvent(new Event("change")); }
+    }
+});
+document.addEventListener("submit", async (event) => {
+    const form = event.target.closest(".access-form");
+    if (!form) return;
+    event.preventDefault();
+    const operation = event.submitter?.dataset.operation;
+    if (!["entry", "exit"].includes(operation)) return;
+    const buttons = form.querySelectorAll("button");
+    buttons.forEach((button) => button.disabled = true);
+    const message = form.querySelector(".access-message");
+    message.textContent = "正在登记…";
+    const body = new FormData(form);
+    body.append("source", location.pathname.includes("camera") ? "摄像头识别" : "图片识别");
+    try {
+        const response = await fetch(`/api/records/${operation}`, {method: "POST", headers: {Accept: "application/json"}, body});
+        const data = await response.json();
+        if (!response.ok || !data.success) throw new Error(data.message || "登记失败");
+        message.className = "access-message success-text";
+        message.textContent = data.message;
+    } catch (error) {
+        message.className = "access-message error-text";
+        message.textContent = userErrorMessage(error, "登记失败，请检查网络后重试");
+    } finally { buttons.forEach((button) => button.disabled = false); }
+});

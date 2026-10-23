@@ -4,23 +4,23 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>登录 - 停车场管理系统</title>
-    <link rel="stylesheet" href="/static/css/app.css">
+    <link rel="stylesheet" href="/static/css/app.css?v=20261023-cn">
 </head>
 <body class="login-page">
 <main class="login-layout">
     <section class="login-identity">
-        <span class="login-mark">P</span>
-        <p class="eyebrow">Parking Management System</p>
+        <span class="login-mark" aria-hidden="true">停</span>
+
         <h1>停车场管理系统</h1>
-        <p>车牌检测、记录管理与数据概览</p>
+
     </section>
     <section class="login-panel">
         <div class="login-form-wrap">
-            <p class="eyebrow">管理员入口</p>
+
             <h2>登录系统</h2>
-            <p class="muted">使用管理员账号继续</p>
+
             {% if error %}<div class="alert error">{{ error }}</div>{% endif %}
-            {% if database_error %}<div class="alert error">MySQL 尚未就绪，请先启动本地数据库服务。</div>{% endif %}
+            {% if database_error %}<div class="alert error">数据库尚未就绪，请先启动数据库服务。</div>{% endif %}
             <form method="post" action="/login" class="stack-form">
                 <label>用户名<input name="username" autocomplete="username" required autofocus></label>
                 <label>密码<input name="password" type="password" autocomplete="current-password" required></label>

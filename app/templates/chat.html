@@ -1,13 +1,1 @@
-{% extends "base.html" %}
-{% block title %}智能问答 - {{ app_name }}{% endblock %}
-{% block heading %}<p class="eyebrow">Local AI</p><h1>智能问答</h1>{% endblock %}
-{% block content %}
-<section class="chat-shell panel">
-    <div class="panel-heading chat-header"><div><p class="eyebrow">Ollama</p><h2>停车管理助手</h2></div><span class="model-chip">{{ ollama_model }}</span></div>
-    <div class="chat-messages" id="chatMessages">
-        <div class="message assistant"><span class="message-label">AI 助手</span><p>你好，请输入需要查询或了解的问题。</p></div>
-    </div>
-    <form class="chat-composer" id="chatForm"><textarea id="chatInput" rows="2" maxlength="2000" placeholder="输入问题" required></textarea><button class="button primary" type="submit">发送</button></form>
-</section>
-{% endblock %}
-{% block scripts %}<script src="/static/js/chat.js"></script>{% endblock %}
+{% extends "base.html" %}{% block title %}停车助手 - {{ app_name }}{% endblock %}{% block heading %}<h1>停车助手</h1>{% endblock %}{% block content %}<section class="panel chat-shell"><div class="panel-heading chat-header"><div><h2>停车咨询</h2></div></div><div class="chat-suggestions">{% for question in ['现在还剩多少车位？','今天进出了多少辆车？','如何登记车辆入场？'] %}<button type="button" class="button secondary small" data-question="{{ question }}">{{ question }}</button>{% endfor %}</div><div class="chat-messages" id="chatMessages"><div class="message assistant"><span class="message-label">停车助手</span><p>请输入问题或完整车牌。</p></div></div><form class="chat-composer" id="chatForm"><textarea id="chatInput" rows="2" maxlength="2000" placeholder="输入问题或完整车牌，如：粤B12345 在场吗？" required></textarea><button class="button primary">发送 ↗</button></form></section>{% endblock %}{% block scripts %}<script src="/static/js/chat.js?v=20261023-cn"></script>{% endblock %}

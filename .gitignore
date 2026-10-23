@@ -1,0 +1,12 @@
+.env
+.venv/
+__pycache__/
+*.py[cod]
+.DS_Store
+.pytest_cache/
+app/static/results/
+
+# 可重新生成的训练中间产物（保留 best.pt 和 last.pt）
+runs/**/weights/epoch*.pt
+runs/**/train_batch*.jpg
+runs/**/val_batch*.jpg

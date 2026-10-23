@@ -20,7 +20,7 @@ def login(
     try:
         user = db.query(User).filter(User.username == username.strip()).first()
     except SQLAlchemyError:
-        request.session["login_error"] = "无法连接 MySQL，请检查数据库服务和 .env 配置"
+        request.session["login_error"] = "无法连接数据库，请检查数据库服务和连接配置"
         return RedirectResponse("/login", status_code=303)
     if not user or not verify_password(password, user.password_hash):
         request.session["login_error"] = "用户名或密码错误"

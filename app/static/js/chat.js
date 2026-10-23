@@ -7,7 +7,7 @@ function addMessage(role, text) {
     item.className = `message ${role}`;
     const label = document.createElement("span");
     label.className = "message-label";
-    label.textContent = role === "user" ? "你" : "AI 助手";
+    label.textContent = role === "user" ? "你" : "停车助手";
     const content = document.createElement("p");
     content.textContent = text;
     item.append(label, content);
@@ -35,9 +35,15 @@ chatForm.addEventListener("submit", async (event) => {
         if (!response.ok || !data.success) throw new Error(data.message || "问答服务暂不可用");
         pending.textContent = data.answer || "模型没有返回内容";
     } catch (error) {
-        pending.textContent = error.message;
+        pending.textContent = userErrorMessage(error, "问答服务暂不可用，请稍后重试");
     } finally {
         button.disabled = false;
         chatInput.focus();
     }
 });
+
+document.querySelectorAll("[data-question]").forEach((button) => button.addEventListener("click", () => {
+    if (chatForm.querySelector("button").disabled) return;
+    chatInput.value = button.dataset.question;
+    chatForm.requestSubmit();
+}));

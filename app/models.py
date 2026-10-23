@@ -42,6 +42,9 @@ class ParkingRecord(Base):
     province: Mapped[str] = mapped_column(String(16), index=True)
     source: Mapped[str] = mapped_column(String(32), default="手工录入")
     note: Mapped[str] = mapped_column(Text, default="")
+    entered_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True, index=True)
+    exited_at: Mapped[datetime | None] = mapped_column(DateTime, nullable=True, index=True)
+    active_plate: Mapped[str | None] = mapped_column(String(32), nullable=True, unique=True)
     recorded_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now, index=True)
 
 
@@ -56,3 +59,10 @@ def seed_admin() -> None:
                 )
             )
             session.commit()
+
+
+class ParkingSetting(Base):
+    __tablename__ = "parking_settings"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    capacity: Mapped[int] = mapped_column(Integer, default=100)
