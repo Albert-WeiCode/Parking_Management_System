@@ -10,3 +10,6 @@ app/static/results/
 runs/**/weights/epoch*.pt
 runs/**/train_batch*.jpg
 runs/**/val_batch*.jpg
+/output/
+/CLPD/
+/dataset/
